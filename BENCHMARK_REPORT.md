@@ -77,10 +77,10 @@ Agent v2 thêm bước retrieval (RAG) nên prompt dài hơn (avg tokens tăng t
 
 ### 4.1 Screenshot
 
-- [ ] `screenshots/grafana-dashboard.png`: Dashboard Grafana khi đang có tải (thấy rõ Golden Signals)
-- [ ] `screenshots/jaeger-slow-trace.png`: Một trace chậm trong Jaeger (thấy span nào chiếm thời gian)
-- [ ] `screenshots/jaeger-error-trace.png`: Một trace lỗi trong Jaeger (có event `exception`)
-- [ ] `screenshots/prometheus-alert-firing.png`: Trang Alerts của Prometheus với ít nhất 2 alert đang **firing**
+- [x] `screenshots/grafana-dashboard.png`: Dashboard Grafana khi đang có tải (thấy rõ Golden Signals)
+- [x] `screenshots/jaeger-slow-trace.png`: Một trace chậm trong Jaeger (thấy span nào chiếm thời gian)
+- [x] `screenshots/jaeger-error-trace.png`: Một trace lỗi trong Jaeger (có event `exception`)
+- [x] `screenshots/prometheus-alert-firing.png`: Trang Alerts của Prometheus với ít nhất 2 alert đang **firing**
 
 ### 4.2 Thí nghiệm "phá hệ thống"
 
