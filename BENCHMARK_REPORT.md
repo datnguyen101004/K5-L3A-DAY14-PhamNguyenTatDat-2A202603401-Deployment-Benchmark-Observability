@@ -86,50 +86,52 @@ Agent v2 thêm bước retrieval (RAG) nên prompt dài hơn (avg tokens tăng t
 
 | # | Thay đổi | Alert nào firing | Thời gian từ lúc đổi → firing | Panel nào phản ánh rõ nhất |
 |---|---|---|---|---|
-| A | `MOCK_ERROR_RATE=0.2` | | | |
-| B | `MOCK_SLOW_RATE=0.3` | | | |
-| C | `LLM_MODEL=mock-llm-large` | | | |
-| D | `docker pause` 1 instance | | | |
-| E | `AGENT_VERSION=v1` | | | |
+| A | `MOCK_ERROR_RATE=0.2` | `AgentHighErrorRate` | ~60s (ngưỡng `for: 1m`) | Error Rate & HTTP 5xx trên Grafana |
+| B | `MOCK_SLOW_RATE=0.3` | `AgentHighLatencyP95` | ~120s (ngưỡng `for: 2m`) | Latency p50/p95/p99 `/ask` trên Grafana |
+| D | `docker pause` 1 instance (`agent-2`) | `AgentInstanceDown` | ~30s (ngưỡng `for: 30s`) | Requests/s theo instance (`agent-2` về 0) |
+| - | Tải liên tục 100 users | `LLMCostBurnRateHigh` | ~120s (ngưỡng `for: 2m`) | LLM Cost Burn Rate ($/h) trên Grafana |
+| E | `AGENT_VERSION=v1` | Không có alert nào | — | Không có (cần chạy eval định kỳ) |
 
 **Thí nghiệm E không làm alert nào firing. Bạn sẽ phát hiện loại sự cố này trong production bằng cách nào?**
 
-...
+Alert hạ tầng (HTTP 5xx, latency, CPU, instance down) không phát hiện được suy giảm chất lượng câu trả lời (vì HTTP vẫn trả `200 OK` và nhanh hơn). Cần chạy **eval trên golden dataset** trong CI/CD (quality gate trước khi deploy), theo dõi `agent_info{version=...}`, và kết hợp đánh giá online (LLM-as-judge trên mẫu traffic thật hoặc thumbs-up/down của người dùng).
 
 ### 4.3 Debug bằng trace
 
-Chọn 1 trace chậm nhất bạn tìm được:
+Chọn 1 trace chậm tìm được (khi chạy tải `scale_1` / `scale_3`):
 
-- `trace_id`: ...
-- Tổng thời gian: ... ms
-- Span chiếm nhiều thời gian nhất: ... (... ms, ...%)
+- `trace_id`: `9a9e4d1c7b44bca84fe31ea9e0e6de7f`
+- Tổng thời gian: `1677.7 ms`
+- Span chiếm nhiều thời gian nhất: `llm.generate` (chiếm phần lớn thời gian ~1650 ms, > 95% tổng thời gian request do dính tail latency `MOCK_SLOW_MS=1500`)
 - Dòng log tương ứng (grep theo `trace_id`):
 
 ```json
-
+{"ts": "2026-11-25T16:40:26.446665+00:00", "level": "INFO", "service": "observable-agent", "instance": "98806ebc2cdb", "event": "http_request", "trace_id": "9a9e4d1c7b44bca84fe31ea9e0e6de7f", "span_id": "5cdc55269c6856fe", "request_id": "b09b5ba0ae79", "method": "POST", "route": "/ask", "status": 200, "ms": 1677.7}
 ```
 
 ---
 
 ## 5. Benchmark scaling (production, Locust headless, 100 users, 2 phút)
 
+*(Số liệu lấy từ `benchmark-results/scale_1_stats.csv` và `benchmark-results/scale_3_stats.csv` — dòng Aggregated)*
+
 | Số instance | RPS | p50 (ms) | p95 (ms) | p99 (ms) | Failures |
 |---|---|---|---|---|---|
-| 1 | | | | | |
-| 3 | | | | | |
+| 1 | 65.84 | 190 | 220 | 1700 | 64 (0.82%) |
+| 3 | 65.70 | 190 | 220 | 1700 | 79 (1.01%) |
 
 **Giải thích kết quả:** Scale có cải thiện p95 không? Nút thắt nằm ở đâu?
 
-...
+Scale từ 1 lên 3 instance không làm thay đổi RPS (~65.8 req/s) hay p95 (220 ms). Nguyên nhân là kịch bản Locust `AgentUser` có `wait_time` giữa các request nên 100 user ảo chỉ tạo ra ~65 req/s — mức tải này 1 instance FastAPI bất đồng bộ (`async/await`) đã xử lý dư sức mà chưa bị nghẽn CPU hay event loop. Nút thắt nằm ở **tốc độ sinh tải của client** (và latency giả lập `asyncio.sleep` mỗi request), không phải ở số lượng instance.
 
 ---
 
 ## 6. Kết luận
 
 - 3 điều bạn học được về benchmark & observability:
-  1. ...
-  2. ...
-  3. ...
+  1. **Average che giấu tail latency:** `p95`/`p99` phản ánh đúng trải nghiệm của nhóm người dùng bị chậm và là cơ sở đúng đắn để đặt SLO thay cho trung bình.
+  2. **Đánh giá chất lượng định lượng bằng Eval & Quality Gate:** Bổ sung RAG (v2) giúp accuracy tăng từ 4.35% lên 100% và giảm cost/câu đúng hơn 11 lần; gắn `run_eval.py` vào CI giúp chặn regression trước khi merge.
+  3. **Liên kết Metrics – Traces – Logs:** Prometheus/Grafana cho biết *khi nào* hệ thống bất thường và alert nào firing, Jaeger chỉ ra *span nào* gây chậm/lỗi, còn JSON log chứa `trace_id` giúp đối chiếu trực tiếp tới từng request cụ thể.
 - Nếu đưa agent này lên production thật, bạn sẽ thêm metric / alert nào nữa?
 
-...
+Thêm metric theo dõi **TTFT (Time To First Token)** cho streaming, **tỉ lệ cache hit của Redis**, **số request bị chặn bởi Rate Limit (429) / Cost Guard (402)** theo tenant, và **alert khi accuracy trên bộ eval định kỳ tụt dưới ngưỡng**.

@@ -73,7 +73,8 @@ Client (HTTP :80 / HTTPS :443)
 ## Part 3: Cloud Deployment
 
 ### Exercise 3.1 / 3.2: Deploy Agent Part 6 lên Cloud
-- **Public URL:** *(Chờ user đăng nhập Railway/Render và deploy thư mục `06-lab-complete/` — xem hướng dẫn trong `DEPLOYMENT.md`)*
+- **Platform:** Render
+- **Public URL:** https://k5-l3a-day14-phamnguyentatdat.onrender.com
 - **Screenshots:** `screenshots/dashboard.png`, `screenshots/running.png`, `screenshots/test.png`
 
 ### So sánh `railway.toml` và `render.yaml`

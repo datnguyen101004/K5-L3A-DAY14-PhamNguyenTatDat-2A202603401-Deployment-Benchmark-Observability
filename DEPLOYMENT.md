@@ -1,33 +1,33 @@
 # Deployment Information
 
 ## Public URL
-https://<your-agent-url>
+https://k5-l3a-day14-phamnguyentatdat.onrender.com
 
 ## Platform
-Railway / Render
+Render
 
 ## Test Commands
 
 ### 1. Health Check (200)
 ```bash
-curl -sS -o /dev/null -w '%{http_code}\n' "https://<your-agent-url>/health"
+curl -sS -o /dev/null -w '%{http_code}\n' "https://k5-l3a-day14-phamnguyentatdat.onrender.com/health"
 ```
 
 ### 2. Readiness Check (200)
 ```bash
-curl -sS -o /dev/null -w '%{http_code}\n' "https://<your-agent-url>/ready"
+curl -sS -o /dev/null -w '%{http_code}\n' "https://k5-l3a-day14-phamnguyentatdat.onrender.com/ready"
 ```
 
 ### 3. Auth Check — Missing API Key (401)
 ```bash
-curl -sS -o /dev/null -w '%{http_code}\n' -X POST "https://<your-agent-url>/ask" \
+curl -sS -o /dev/null -w '%{http_code}\n' -X POST "https://k5-l3a-day14-phamnguyentatdat.onrender.com/ask" \
   -H "Content-Type: application/json" \
   -d '{"question": "Hello"}'
 ```
 
 ### 4. API Test — With API Key (200)
 ```bash
-curl -sS -o /dev/null -w '%{http_code}\n' -X POST "https://<your-agent-url>/ask" \
+curl -sS -o /dev/null -w '%{http_code}\n' -X POST "https://k5-l3a-day14-phamnguyentatdat.onrender.com/ask" \
   -H "Content-Type: application/json" \
   -H "X-API-Key: $AGENT_API_KEY" \
   -d '{"question": "Hello"}'
