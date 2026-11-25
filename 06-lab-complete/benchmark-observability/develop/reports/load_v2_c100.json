@@ -1,0 +1,26 @@
+{
+  "target": "http://127.0.0.1:8002",
+  "concurrency": 100,
+  "total_requests": 300,
+  "duration_s": 6.45,
+  "rps": 46.53,
+  "error_rate": 0.0,
+  "status_codes": {
+    "200": 300
+  },
+  "latency_ms": {
+    "min": 182.0,
+    "avg": 1417.0,
+    "p50": 416.2,
+    "p90": 4000.1,
+    "p95": 4700.8,
+    "p99": 5246.3,
+    "max": 6163.4
+  },
+  "total_cost_usd": 0.010165,
+  "slo": {
+    "p95_ms": 500,
+    "error_rate": 0.02,
+    "passed": false
+  }
+}
